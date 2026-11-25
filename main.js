@@ -20,12 +20,13 @@ const map = new maplibregl.Map({
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
+      // ports source
       ports: {
         type: 'geojson',
         data: 'api/stations',
-      }
+      },
     },
-    
+
 
     // id: i
     // name: n
@@ -38,6 +39,7 @@ const map = new maplibregl.Map({
         id: 'osm-layer',
         source: 'osm',
         type: 'raster',
+        paint: { 'raster-opacity': 0.6 },
       },
       {
         id: 'points-layer',
@@ -48,11 +50,9 @@ const map = new maplibregl.Map({
             'interpolate',
             ['linear'],
             ['get', 'b'],
-            0, '#888888',
+            0, '#94a3b8',
             1, '#f8bf02'
           ],
-
-
 
           'circle-radius': [
             'interpolate',
@@ -62,6 +62,72 @@ const map = new maplibregl.Map({
             2,
             14,
             6,
+          ],
+
+          'circle-stroke-width': 1.1,
+          'circle-stroke-color': '#fff',
+
+          // P178
+          'circle-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            8,
+            0,
+            9,
+            0.1,
+            11,
+            0.5,
+            12,
+            0.9,
+            13, //level
+            1.0, //100%
+          ],
+
+          'circle-stroke-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            8,
+            0,
+            9,
+            0.1,
+            11,
+            0.5,
+            12,
+            0.9,
+            13, //level
+            1.0, //100%
+          ],
+
+          // p213 5.2.3.
+
+
+        },
+      },
+      // P174 heatmap 
+      {
+        id: 'points-heatmap-layer',
+        source: 'ports',
+        type: 'heatmap',
+        maxzoom: 12,
+        paint: {
+          'heatmap-weight': 0.01,
+          'heatmap-opacity': 0.7,
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(0,0,0,0)',
+            0.3,
+            'rgba(253,224,71,0.55)',
+            0.6,
+            'rgba(248,191,2,0.85)',
+            0.85,
+            'rgba(234,118,0,0.95)',
+            1.0,
+            'rgba(194,64,12,1)',
           ],
         },
       },
