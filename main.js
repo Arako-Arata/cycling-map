@@ -25,6 +25,13 @@ const map = new maplibregl.Map({
         data: 'api/stations',
       }
     },
+    
+
+    // id: i
+    // name: n
+    // address: a
+    // bikes: b
+    // docks: d
 
     layers: [
       {
@@ -40,10 +47,11 @@ const map = new maplibregl.Map({
           'circle-color': [
             'interpolate',
             ['linear'],
-            ['get', 'bikes'],
+            ['get', 'b'],
             0, '#888888',
             1, '#f8bf02'
           ],
+
 
 
           'circle-radius': [
@@ -74,12 +82,12 @@ map.on('click', (e) => {
     // ポップアップの内容
     .setHTML(
       `
-    <div style="font-weight:1000; font-size: 1rem;">${feature.properties.name
+    <div style="font-weight:1000; font-size: 1rem;">${feature.properties.n
       }</div>
-    <div style="font-weight:450; font-size: 0.5rem;">${feature.properties.address
+    <div style="font-weight:450; font-size: 0.5rem;">${feature.properties.a
       }</div>
-    <div style="font-weight:600; font-size: 0.7rem;">貸出可能: ${feature.properties.bikes} 台</div>
-    <div style="font-weight:600; font-size: 0.7rem;">返却可能: ${feature.properties.docks} 台</div> 
+    <div style="font-weight:600; font-size: 0.7rem;">貸出可能: ${feature.properties.b} 台</div>
+    <div style="font-weight:600; font-size: 0.7rem;">返却可能: ${feature.properties.d} 台</div> 
       `
     )
     .addTo(map);
