@@ -34,11 +34,11 @@ export async function GET() {
                     coordinates: [info.lon, info.lat]
                 },
                 properties: {
-                    id: info.station_id,
-                    name: info.name,
-                    address: info.address,
-                    bikes: status.num_bikes_available,
-                    docks: status.num_docks_available,
+        //            i: info.station_id,
+                    n: info.name,
+                    a: info.address,
+                    b: status.num_bikes_available,
+                    d: status.num_docks_available,
                 }
             });
         }
