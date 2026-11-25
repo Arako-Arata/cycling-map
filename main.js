@@ -1,5 +1,6 @@
 import maplibregl, { Properties } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import distance from '@turf/distance'
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -24,6 +25,15 @@ const map = new maplibregl.Map({
       ports: {
         type: 'geojson',
         data: 'api/stations',
+        attribution:
+          '&copy; <a href="https://ckan.odpt.org/dataset/c_bikeshare_gbfs-openstreet">OpenStreet株式会社 / 公共交通オープンデータ協議会</a>',
+      },
+      route: {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
       },
     },
 
@@ -105,15 +115,15 @@ const map = new maplibregl.Map({
 
         },
       },
-      // P174 heatmap 
+      // P174 ヒートマップ
       {
         id: 'points-heatmap-layer',
         source: 'ports',
         type: 'heatmap',
         maxzoom: 12,
         paint: {
-          'heatmap-weight': 0.01,
-          'heatmap-opacity': 0.7,
+          'heatmap-weight': 0.015,
+          'heatmap-opacity': 0.55,
           'heatmap-color': [
             'interpolate',
             ['linear'],
@@ -127,15 +137,24 @@ const map = new maplibregl.Map({
             0.85,
             'rgba(234,118,0,0.95)',
             1.0,
-            'rgba(194,64,12,1)',
+            'rgba(234,88,12,0.9)',
           ],
+        },
+      },
+      {
+        id: 'route-layer',
+        source: 'route',
+        type: 'line',
+        paint: {
+          'line-color': '#33aaff',
+          'line-width': 4,
         },
       },
     ],
   },
 });
 
-// P153 4-2-8 と P221 5-2-4
+// P153 4-2-8 と P221 5-2-4 ポップアップ
 map.on('click', (e) => {
   const features = map.queryRenderedFeatures(e.point, {
     layers: ['points-layer'],
@@ -160,7 +179,7 @@ map.on('click', (e) => {
 
 });
 
-// P221 5-2-4
+// P221 5-2-4 マウスポインタの見た目
 map.on('mousemove', (e) => {
   const features = map.queryRenderedFeatures(e.point, {
     layers: ['points-layer'],
@@ -172,3 +191,80 @@ map.on('mousemove', (e) => {
   }
 });
 
+// 方位と縮尺
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
+
+
+// P226 5-2-6 位置情報，最寄りポートの計算
+let userLocation = null;
+
+const geolocationControl = new maplibregl.GeolocateControl({
+  trackUserLocation: true,
+});
+map.addControl(geolocationControl, 'bottom-right');
+geolocationControl.on('geolocate', (e) => {
+  userLocation = [e.coords.longitude, e.coords.latitude];
+});
+
+const getNearestFeature = (longitude, latitude) => {
+  const features = map.querySourceFeatures('ports', {
+    filter: ['<', 0, ['get', 'b']],
+  });
+  if (features.length === 0) return null;
+
+
+
+  const nearestFeature = features.reduce((minDistFeature, feature) => {
+    const dist = distance(
+      [longitude, latitude],
+      feature.geometry.coordinates,
+    );
+    if (minDistFeature === null || minDistFeature.properties.dist > dist)
+
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          dist,
+        },
+      };
+
+    return minDistFeature;
+  }, null);
+
+  return nearestFeature;
+};
+
+map.on('load',() => {
+  map.on('render', () => {
+    if (geolocationControl._watchState === 'OFF') userLocation = null; 
+      if (map.getZoom() < 7 || userLocation === null) {
+      map.getSource('route').setData({
+        type: 'FeatureCollection',
+        features: [],
+      });
+      return;
+    }
+    const nearestFeature = getNearestFeature(
+      userLocation[0],
+      userLocation[1],
+    );
+
+    const routeFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          userLocation,
+          nearestFeature._geometry.coordinates,
+        ],
+      },
+    };
+
+    map.getSource('route').setData({
+      type: 'FeatureCollection',
+      features: [routeFeature],
+    });
+  });
+});
