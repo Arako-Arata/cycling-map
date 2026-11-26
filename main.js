@@ -1,6 +1,8 @@
 import maplibregl, { Properties } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import distance from '@turf/distance'
+import OpacityControl from 'maplibre-gl-opacity';
+import 'maplibre-gl-opacity/dist/maplibre-gl-opacity.css';
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -20,6 +22,14 @@ const map = new maplibregl.Map({
         tileSize: 256,
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      },
+      Tanshoku: {
+        type: 'raster',
+        tiles: ['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'],
+        maxzoom: 19,
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
       },
       // ports source
       ports: {
@@ -45,11 +55,19 @@ const map = new maplibregl.Map({
     // docks: d
 
     layers: [
+      // base map
       {
         id: 'osm-layer',
         source: 'osm',
         type: 'raster',
         paint: { 'raster-opacity': 0.6 },
+      },
+
+      {
+        id: 'Tanshoku-layer',
+        source: 'Tanshoku',
+        type: 'raster',
+        paint: { 'raster-opacity': 0.5 },
       },
       {
         id: 'points-layer',
@@ -146,13 +164,28 @@ const map = new maplibregl.Map({
         source: 'route',
         type: 'line',
         paint: {
-          'line-color': '#33aaff',
+          'line-color': '#2563eb',
           'line-width': 4,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2],
         },
       },
     ],
   },
 });
+
+// P204 basemapの切り替え
+map.on('load', () => {
+  const opacity = new OpacityControl({
+    baseLayers: {
+      'osm-layer': 'OpenStreetMap',
+      'Tanshoku-layer': '淡色地図',
+    },
+  });
+  map.addControl(opacity, 'top-left');
+});
+
+
 
 // P153 4-2-8 と P221 5-2-4 ポップアップ
 map.on('click', (e) => {
@@ -161,16 +194,27 @@ map.on('click', (e) => {
   });
   if (features.length === 0) return;
   const feature = features[0];
+
+  // GoogleMaps検索の準備
+  const [lng, lat] = feature.geometry.coordinates;
+  const portscoordinates = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  const portsroute = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
   const popup = new maplibregl.Popup()
     .setLngLat(feature.geometry.coordinates)
 
-    // ポップアップの内容
+  
     .setHTML(
       `
     <div style="font-weight:1000; font-size: 1rem;">${feature.properties.n
       }</div>
-    <div style="font-weight:450; font-size: 0.5rem;">${feature.properties.a
-      }</div>
+
+    <div style="font-weight:450; font-size: 0.5rem;">
+      <a href = "${portscoordinates}" target="_blank" rel="noopener noreferrer">${feature.properties.a}</a></div>
+
+    <div>
+      <a href = "${portsroute}" target="_blank" rel="noopener noreferrer">ポートまでの経路</a></div>
+
     <div style="font-weight:600; font-size: 0.7rem;">貸出可能: ${feature.properties.b} 台</div>
     <div style="font-weight:600; font-size: 0.7rem;">返却可能: ${feature.properties.d} 台</div> 
       `
@@ -236,10 +280,10 @@ const getNearestFeature = (longitude, latitude) => {
   return nearestFeature;
 };
 
-map.on('load',() => {
+map.on('load', () => {
   map.on('render', () => {
-    if (geolocationControl._watchState === 'OFF') userLocation = null; 
-      if (map.getZoom() < 7 || userLocation === null) {
+    if (geolocationControl._watchState === 'OFF') userLocation = null;
+    if (map.getZoom() < 7 || userLocation === null) {
       map.getSource('route').setData({
         type: 'FeatureCollection',
         features: [],
