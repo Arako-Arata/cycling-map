@@ -69,19 +69,80 @@ const map = new maplibregl.Map({
         type: 'raster',
         paint: { 'raster-opacity': 0.5 },
       },
+      // 返却可能台数
       {
-        id: 'points-layer',
+        id: 'points-layer-return',
         source: 'ports',
         type: 'circle',
+        filter: ['<', 0, ['get', 'd']],
+        layout: {
+          visibility: 'visible',
+        },
         paint: {
-          'circle-color': [
+          'circle-color': '#94a3b8',
+          'circle-radius': [
             'interpolate',
             ['linear'],
-            ['get', 'b'],
-            0, '#94a3b8',
-            1, '#f8bf02'
+            ['zoom'],
+            5,
+            2,
+            14,
+            6,
           ],
 
+          'circle-stroke-width': 1.1,
+          'circle-stroke-color': '#fff',
+
+          // P178
+          'circle-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            8,
+            0,
+            9,
+            0.1,
+            11,
+            0.5,
+            12,
+            0.9,
+            13, //level
+            1.0, //100%
+          ],
+
+          'circle-stroke-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            8,
+            0,
+            9,
+            0.1,
+            11,
+            0.5,
+            12,
+            0.9,
+            13, //level
+            1.0, //100%
+          ],
+
+          // p213 5.2.3.
+
+
+        },
+      },
+
+      // 利用可能台数
+      {
+        id: 'points-layer-rent',
+        source: 'ports',
+        type: 'circle',
+        filter: ['<', 0, ['get', 'b']],
+        layout: {
+          visibility: 'visible',
+        },
+        paint: {
+          'circle-color': '#f8bf02',
           'circle-radius': [
             'interpolate',
             ['linear'],
@@ -139,6 +200,9 @@ const map = new maplibregl.Map({
         source: 'ports',
         type: 'heatmap',
         maxzoom: 12,
+        layout: {
+          visibility: 'visible',
+        },
         paint: {
           'heatmap-weight': 0.015,
           'heatmap-opacity': 0.55,
@@ -174,15 +238,25 @@ const map = new maplibregl.Map({
   },
 });
 
-// P204 basemapの切り替え
+// P204 basemapの切り替え，表示するポートの選択
 map.on('load', () => {
   const opacity = new OpacityControl({
     baseLayers: {
       'osm-layer': 'OpenStreetMap',
       'Tanshoku-layer': '淡色地図',
     },
+    overLayers: {
+      'points-layer-rent': '利用可能台数',
+      'points-layer-return': '返却可能台数',
+      'points-heatmap-layer': 'ポートのヒートマップ'
+    },
   });
   map.addControl(opacity, 'top-left');
+  // まとめてチェック
+  const checkLayers = ['points-layer-rent','points-layer-return','points-heatmap-layer'];
+  checkLayers.forEach(id => {
+    document.getElementById(id)?.click();
+  })
 });
 
 
@@ -190,7 +264,7 @@ map.on('load', () => {
 // P153 4-2-8 と P221 5-2-4 ポップアップ
 map.on('click', (e) => {
   const features = map.queryRenderedFeatures(e.point, {
-    layers: ['points-layer'],
+    layers: ['points-layer-rent', 'points-layer-return'],
   });
   if (features.length === 0) return;
   const feature = features[0];
@@ -203,7 +277,7 @@ map.on('click', (e) => {
   const popup = new maplibregl.Popup()
     .setLngLat(feature.geometry.coordinates)
 
-  
+
     .setHTML(
       `
     <div style="font-weight:1000; font-size: 1rem;">${feature.properties.n
@@ -226,7 +300,7 @@ map.on('click', (e) => {
 // P221 5-2-4 マウスポインタの見た目
 map.on('mousemove', (e) => {
   const features = map.queryRenderedFeatures(e.point, {
-    layers: ['points-layer'],
+    layers: ['points-layer-rent', 'points-layer-return'],
   });
   if (features.length > 0) {
     map.getCanvas().style.cursor = 'pointer';
