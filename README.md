@@ -36,6 +36,10 @@
 | 地図ライブラリ | MapLibre GL JS |
 | バックエンド | Vercel Serverless Functions |
 
+## 工夫したところ
+- BFFによるデータ統合とキャッシュ制御: Vercel Serverless Functions上でステーション情報と空き状況のデータを結合してGeoJSON化しているほか，stale-while-revalidateを用いて負荷軽減を行っています。
+- JSONの軽量化: GeoJSONのキーを短縮することで，全国約15,000ポートのデータサイズを3.9MBから3.6MBに削減しました。
+
 ## 使用データ
 - GBFS: 
 [OpenStreet株式会社 / 公共交通オープンデータ協議会(HELLO CYCLING)](https://ckan.odpt.org/dataset/c_bikeshare_gbfs-openstreet)
@@ -43,4 +47,5 @@
 - 淡色地図: [国土地理院 地理院タイル](https://maps.gsi.go.jp/development/ichiran.html)
 
 ## 免責事項
-本アプリで表示されるポートの空き状況は，実際の現地状況と異なる場合があります。
+- 地図上に表示されるポートの空き状況は，実際の現地状況と異なる場合があります。
+- このアプリはHELLO CYCLINGの非公式ビューアです。
